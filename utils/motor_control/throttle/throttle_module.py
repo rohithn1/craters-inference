@@ -29,7 +29,7 @@ class ThrottleController:
             r = self.FULL_REVERSE - self.CREEP_REVERSE
             self.FULL_REVERSE = self.FULL_REVERSE + (r*percent)
 
-        subprocess.run(['sudo', 'bash', 'registerpwm'], check=True, text=True, capture_output=True)
+        subprocess.run(['sudo', 'bash', 'registerpwm'], check=True)
 
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pwm_pin, GPIO.OUT)
