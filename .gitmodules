@@ -1,0 +1,9 @@
+[submodule "third_party/Pangolin"]
+	path = third_party/Pangolin
+	url = https://github.com/stevenlovegrove/Pangolin
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://github.com/libigl/eigen
+[submodule "slam/ORB_SLAM3"]
+	path = slam/ORB_SLAM3
+	url = https://github.com/UZ-SLAMLab/ORB_SLAM3
