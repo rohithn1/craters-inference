@@ -20,7 +20,7 @@ class SteeringController:
 
         self.NAP_TIME = 0.05
 
-        subprocess.run(['sudo', 'bash', 'registerpwm'], check=True, text=True, capture_output=True)
+        subprocess.run(['sudo', 'bash', 'registerpwm'], check=True, universal_newlines=True)
 
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pwm_pin, GPIO.OUT)

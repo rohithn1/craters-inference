@@ -12,8 +12,8 @@ try:
     values_30_36 = np.arange(30, 36.1, 0.1)
     values_24 = [24]
     values_30_24 = np.arange(30, 23.9, -0.1)
-    values_24_36 = np.concatenate((np.flip(values_30_24), [30], values_30_36))
-    
+    #values_24_36 = np.concatenate((np.flip(values_30_24), [30], values_30_36))
+    values_24_36 = np.concatenate((np.flip(values_30_24, axis=0), [30], values_30_36))
 
     time.sleep(2)
 

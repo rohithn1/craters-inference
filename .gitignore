@@ -2,3 +2,5 @@
 third_party/opencv-4.4.0/
 third_party/opencv_contrib-4.4.0/
 slam/ORB_SLAM3/Vocabulary/ORBvoc.txt
+__pycache__/
+*.pyc
