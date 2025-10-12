@@ -5,7 +5,7 @@ BAG_NAME="recording_$(date +%Y%m%d_%H%M%S).bag"
 WORKSPACE="$HOME/craters-inference/catkin_ws"
 LAUNCH_FILE="imu_stream sensor_streams.launch"
 ROS_TOPICS="/csi_cam_0/image_raw /csi_cam_0/camera_info /imu"
-BUFFER_SIZE=4096
+BUFFER_SIZE=1024
 # ----------------------------------------------------------
 
 echo "[INFO] Setting up ROS environment..."
@@ -25,7 +25,7 @@ until rostopic list | grep -q "/csi_cam_0/image_raw" && rostopic list | grep -q 
 done
 
 echo "[INFO] Topics detected. Starting rosbag recording..."
-rosbag record $ROS_TOPICS -O "$BAG_DIR/$BAG_NAME" --buffsize=$BUFFER_SIZE --lz4 --split --duration=120 $ROS_TOPICS &
+rosbag record $ROS_TOPICS -O "$BAG_DIR/$BAG_NAME" --buffsize=$BUFFER_SIZE --lz4 --split --duration=30 $ROS_TOPICS &
 BAG_PID=$!
 
 # --- cleanup on Ctrl+C ---
