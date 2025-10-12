@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import smbus
 import os
@@ -22,7 +22,7 @@ def euler_to_quaternion(r, p, y):
 def talker():
     rospy.init_node('imu', anonymous=False)
     imu_pub = rospy.Publisher('/imu', Imu, queue_size= 10)
-    rate = rospy.Rate(150)
+    rate = rospy.Rate(120)
     
     address = 0x68
     bus = smbus.SMBus(1)

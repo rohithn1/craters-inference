@@ -1,0 +1,4 @@
+<launch>
+  <node name="imu" pkg="imu_stream" type="publisher.py" output="screen"></node>
+  <include file="$(find jetson_csi_cam)/jetson_csi_cam.launch"></include>
+</launch>

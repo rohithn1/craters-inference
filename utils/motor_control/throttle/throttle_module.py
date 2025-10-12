@@ -26,9 +26,9 @@ class ThrottleController:
         self.NAP_TIME = 0.05
         self.CURRENT_SPEED = self.NEUTRAL
         self.TARGET_SPEED = self.NEUTRAL
-        self.THROTTLE_PICKUP_RATE = 0.01
-        self.THROTTLE_INCREMENT = 0.1
-        
+        self.THROTTLE_PICKUP_RATE = 0.05 # limit on how frequent the pwm duty cycle can be changed in seconds
+        self.THROTTLE_INCREMENT_MIN = 0.05
+        self.THROTTLE_INCREMENT_MAX = 0.5
         # Threading primitives
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
@@ -106,16 +106,16 @@ class ThrottleController:
                 current_speed = self.CURRENT_SPEED
                 target_speed = self.TARGET_SPEED
 
-            if abs(target_speed - current_speed) < self.THROTTLE_INCREMENT:
+            if abs(target_speed - current_speed) < self.THROTTLE_INCREMENT_MIN:
                 time.sleep(self.THROTTLE_PICKUP_RATE)
                 continue
 
             if target_speed > current_speed:
-                step = self.THROTTLE_INCREMENT
+                step = min(self.THROTTLE_INCREMENT_MAX, target_speed - current_speed)
             # elif target_speed == current_speed:
             #     step = 0
             else:
-                step = -self.THROTTLE_INCREMENT
+                step = -min(self.THROTTLE_INCREMENT_MAX, current_speed - target_speed)
             next_speed = current_speed + step
             if (step > 0 and next_speed > target_speed) or (step < 0 and next_speed < target_speed):
                 next_speed = target_speed
