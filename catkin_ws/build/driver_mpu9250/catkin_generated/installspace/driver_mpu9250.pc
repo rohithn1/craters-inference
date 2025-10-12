@@ -1,8 +1,0 @@
-prefix=/home/craters/catkin_ws/install
-
-Name: driver_mpu9250
-Description: Description of driver_mpu9250
-Version: 1.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

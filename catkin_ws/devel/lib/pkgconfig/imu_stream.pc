@@ -1,8 +1,0 @@
-prefix=/home/craters/catkin_ws/devel
-
-Name: imu_stream
-Description: Description of imu_stream
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
