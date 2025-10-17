@@ -1,0 +1,49 @@
+=================== Jetson Expansion Header Tool ===================
+ |                                                                    |
+ |                                                                    |
+ |                      3.3V (  1) .. (  2) 5V                        |
+ |                      i2c2 (  3) .. (  4) 5V                        |
+ |                      i2c2 (  5) .. (  6) GND                       |
+ |                    unused (  7) .. (  8) uartb                     |
+ |                       GND (  9) .. ( 10) uartb                     |
+ |                    unused ( 11) .. ( 12) unused                    |
+ |                    unused ( 13) .. ( 14) GND                       |
+ |                        NA ( 15) .. ( 16) unused                    |
+ |                      3.3V ( 17) .. ( 18) unused                    |
+ |                    unused ( 19) .. ( 20) GND                       |
+ |                    unused ( 21) .. ( 22) unused                    |
+ |                    unused ( 23) .. ( 24) unused                    |
+ |                       GND ( 25) .. ( 26) unused                    |
+ |                      i2c1 ( 27) .. ( 28) i2c1                      |
+ |                        NA ( 29) .. ( 30) GND                       |
+ |                        NA ( 31) .. ( 32) unused                    |
+ |                    unused ( 33) .. ( 34) GND                       |
+ |                    unused ( 35) .. ( 36) unused                    |
+ |                    unused ( 37) .. ( 38) unused                    |
+ |                       GND ( 39) .. ( 40) unused                    |
+ |                                                                    |
+ |                                                                    |
+ |                        Jetson 40pin Header:                        |
+ |                                                                    |
+ |                 Configure for compatible hardware                  |
+ |                   Configure header pins manually                   |
+ |                                Back                                |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+ |                                                                    |
+  ====================================================================
+
