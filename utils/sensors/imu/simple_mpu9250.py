@@ -24,6 +24,9 @@ def main():
     imu = MPU9250.MPU9250(bus, address)
     imu.begin()
     
+    # Print 3 empty lines so we can overwrite them later
+    print("\n" * 3)
+
     while True:
         imu.readSensor()
         imu.computeOrientation()
@@ -46,10 +49,15 @@ def main():
         imu_msg.linear_acceleration.y = imu.AccelVals[1]
         imu_msg.linear_acceleration.z = imu.AccelVals[2]
         imu_msg.linear_acceleration_covariance[0] = -1
+
+        # Move cursor up 3 lines to overwrite previous output
+        sys.stdout.write("\033[F" * 3)  # ANSI escape: Move cursor up 3 lines
+
         print(f"Orientation (deg) - Roll: {imu.roll:.2f}, Pitch: {imu.pitch:.2f}, Yaw: {imu.yaw:.2f}")
         print(f"Angular Velocity - x: {imu.GyroVals[0]:.3f}, y: {imu.GyroVals[1]:.3f}, z: {imu.GyroVals[2]:.3f}")
         print(f"Linear Acceleration - x: {imu.AccelVals[0]:.3f}, y: {imu.AccelVals[1]:.3f}, z: {imu.AccelVals[2]:.3f}")
 
-        time.sleep(1)
+        sys.stdout.flush()
+        time.sleep(0.1)
 
 main()
