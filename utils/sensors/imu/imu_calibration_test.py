@@ -116,7 +116,7 @@ def calibrate_gyro(mpu):
     print(f"Gyro bias: {bias}")
     return bias
 
-def calibrate_accel_per_axis(mpu, n=CAL_SAMPLES):
+def calibrate_accel_per_axis_3_point(mpu, n=CAL_SAMPLES):
     print("\n== Accelerometer per-axis calibration ==")
     axes = [('X+', 0), ('Y+', 1), ('Z+', 2)]
     measured = {}
@@ -134,6 +134,41 @@ def calibrate_accel_per_axis(mpu, n=CAL_SAMPLES):
     ])
     print(f"Accel bias: {bias}")
     return bias
+
+def calibrate_accel_per_axis_6_point(mpu, n=CAL_SAMPLES):
+    print("\n== Full 6-Point Accelerometer Calibration ==")
+    faces = [
+        ('X+', np.array([1, 0, 0])),
+        ('X-', np.array([-1, 0, 0])),
+        ('Y+', np.array([0, 1, 0])),
+        ('Y-', np.array([0, -1, 0])),
+        ('Z+', np.array([0, 0, 1])),
+        ('Z-', np.array([0, 0, -1]))
+    ]
+
+    measured = {}
+    for label, _ in faces:
+        input(f"Place {label} face UP and press Enter to start sampling...")
+        samples = sample_sensor(mpu.readAccelerometerMaster, n)
+        mean = np.mean(samples, axis=0)
+        measured[label] = mean
+        print(f"{label} mean: {mean}")
+
+    # Calculate bias and scale
+    # For each axis, the + and - readings should be approximately symmetric around 0g
+    bias = np.zeros(3)
+    scale = np.ones(3)
+
+    for axis, (plus, minus) in enumerate([('X+', 'X-'), ('Y+', 'Y-'), ('Z+', 'Z-')]):
+        plus_mean = measured[plus][axis]
+        minus_mean = measured[minus][axis]
+        bias[axis] = (plus_mean + minus_mean) / 2.0   # offset between + and -
+        scale[axis] = (2.0) / (plus_mean - minus_mean)  # scale factor to make ±1g range correct
+
+    print(f"\nAccelerometer bias (g): {bias}")
+    print(f"Accelerometer scale: {scale}")
+
+    return bias, scale
 
 def get_magnetic_declination(lat, lon):
     try:
@@ -173,7 +208,8 @@ def main():
     print("IMU initialized.")
 
     gyro_bias = calibrate_gyro(mpu)
-    accel_bias = calibrate_accel_per_axis(mpu)
+    #accel_bias = calibrate_accel_per_axis_3_point(mpu)
+    accel_bias, accel_scale = calibrate_accel_per_axis_6_point(mpu)
     declination = get_magnetic_declination(LAT, LON)
     with open(CALIBRATION_FILE, "w") as file:
         file.write(f"GYRO[{gyro_bias}] ACCEL[{accel_bias}] DECLI[declination]")
@@ -193,7 +229,8 @@ def main():
                 if event.type == pygame.QUIT:
                     raise KeyboardInterrupt
 
-            accel = np.array(mpu.readAccelerometerMaster()) - accel_bias
+            #accel = np.array(mpu.readAccelerometerMaster()) - accel_bias
+            accel = (np.array(mpu.readAccelerometerMaster()) - accel_bias) * accel_scale
             gyro = np.array(mpu.readGyroscopeMaster()) - gyro_bias
             mag = np.array(mpu.readMagnetometerMaster())
             #accel = R_MOUNT @ accel
