@@ -7,6 +7,8 @@ from datetime import datetime
 from mpu9250_jmdev.registers import *
 from mpu9250_jmdev.mpu_9250 import MPU9250
 from pywmm import WMMv2
+import os
+os.environ["SDL_RENDER_DRIVER"] = "software"
 
 # ==========================================================
 # CONFIGURATION
@@ -17,7 +19,7 @@ CAL_SAMPLES = 500
 SAMPLE_PERIOD = 0.01
 LAT, LON = 37.3228818, -121.9492194
 WINDOW_WIDTH, WINDOW_HEIGHT = 960, 720
-HZ = int(1 / SAMPLE_PERIOD)
+HZ = 30
 # Car frame of reference
 R_MOUNT = np.array([
     [ 0, -1,  0],
@@ -85,7 +87,6 @@ class Wireframe:
         ]
 
     def rotate(self, pitch, roll, yaw):
-        """Return rotated vertices (degrees)"""
         pitch, roll, yaw = np.radians([pitch, roll, yaw])
         Rx = np.array([
             [1,0,0],
@@ -111,7 +112,6 @@ class Wireframe:
 def calibrate_gyro(mpu):
     print("Keep IMU still for gyro calibration...")
     samples = sample_sensor(mpu.readGyroscopeMaster)
-    #samples_transformed = np.dot(samples, R_MOUNT.T)
     bias = np.mean(samples, axis=0)
     print(f"Gyro bias: {bias}")
     return bias
@@ -123,7 +123,6 @@ def calibrate_accel_per_axis_3_point(mpu, n=CAL_SAMPLES):
     for label, idx in axes:
         input(f"Place {label} face UP and press Enter to start sampling...")
         samples = sample_sensor(mpu.readAccelerometerMaster, n)
-        #samples_transformed = np.dot(samples, R_MOUNT.T)
         mean = np.mean(samples, axis=0)
         measured[label[0]] = mean
         print(f"{label} mean: {mean}")
@@ -154,16 +153,14 @@ def calibrate_accel_per_axis_6_point(mpu, n=CAL_SAMPLES):
         measured[label] = mean
         print(f"{label} mean: {mean}")
 
-    # Calculate bias and scale
-    # For each axis, the + and - readings should be approximately symmetric around 0g
     bias = np.zeros(3)
     scale = np.ones(3)
 
     for axis, (plus, minus) in enumerate([('X+', 'X-'), ('Y+', 'Y-'), ('Z+', 'Z-')]):
         plus_mean = measured[plus][axis]
         minus_mean = measured[minus][axis]
-        bias[axis] = (plus_mean + minus_mean) / 2.0   # offset between + and -
-        scale[axis] = (2.0) / (plus_mean - minus_mean)  # scale factor to make ±1g range correct
+        bias[axis] = (plus_mean + minus_mean) / 2.0
+        scale[axis] = (2.0) / (plus_mean - minus_mean)
 
     print(f"\nAccelerometer bias (g): {bias}")
     print(f"Accelerometer scale: {scale}")
@@ -192,7 +189,6 @@ def sample_sensor(func, n=CAL_SAMPLES, delay=SAMPLE_PERIOD):
     return np.array(data)
 
 def main():
-    # --- init IMU ---
     bus = SMBus(I2C_BUS)
     mpu = MPU9250(
         address_ak=AK8963_ADDRESS,
@@ -208,14 +204,12 @@ def main():
     print("IMU initialized.")
 
     gyro_bias = calibrate_gyro(mpu)
-    #accel_bias = calibrate_accel_per_axis_3_point(mpu)
     accel_bias, accel_scale = calibrate_accel_per_axis_6_point(mpu)
     declination = get_magnetic_declination(LAT, LON)
     with open(CALIBRATION_FILE, "w") as file:
         file.write(f"GYRO[{gyro_bias}] ACCEL[{accel_bias}] DECLI[declination]")
     madgwick = Madgwick()
 
-    # --- init Pygame ---
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("IMU Orientation Viewer")
@@ -225,17 +219,14 @@ def main():
 
     try:
         while True:
+            pygame.event.pump()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     raise KeyboardInterrupt
 
-            #accel = np.array(mpu.readAccelerometerMaster()) - accel_bias
             accel = (np.array(mpu.readAccelerometerMaster()) - accel_bias) * accel_scale
             gyro = np.array(mpu.readGyroscopeMaster()) - gyro_bias
             mag = np.array(mpu.readMagnetometerMaster())
-            #accel = R_MOUNT @ accel
-            #gyro  = R_MOUNT @ gyro
-            #mag   = R_MOUNT @ mag
             mag = np.array([
                 mag[0]*np.cos(declination) - mag[1]*np.sin(declination),
                 mag[0]*np.sin(declination) + mag[1]*np.cos(declination),
@@ -247,7 +238,6 @@ def main():
 
             screen.fill((0,0,0))
             verts = cube.rotate(pitch, roll, yaw)
-            # simple perspective projection
             scale = 300
             dist = 4
             projected = []
@@ -257,8 +247,6 @@ def main():
                 py = int(WINDOW_HEIGHT/2 - f*y)
                 projected.append((px, py))
 
-            #for e in cube.edges:
-            #    pygame.draw.line(screen, (0,255,255), projected[e[0]], projected[e[1]], 2)
             faces = [
                     (0,1,2,3),
                     (4,5,6,7),
@@ -282,13 +270,13 @@ def main():
             for e in cube.edges:
                 pygame.draw.line(screen, (0,0,0), projected[e[0]], projected[e[1]], 2)
 
-            # text overlay
             text = f"Pitch: {pitch:.1f}  Roll: {roll:.1f}  Yaw: {yaw:.1f}"
             txtsurf = font.render(text, True, (255,255,255))
             screen.blit(txtsurf, (20, 20))
 
             pygame.display.flip()
             clock.tick(HZ)
+            pygame.time.wait(1)
 
     except KeyboardInterrupt:
         print("Stopping...")
