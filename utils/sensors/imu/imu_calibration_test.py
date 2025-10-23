@@ -6,9 +6,13 @@ from smbus2 import SMBus
 from datetime import datetime
 from mpu9250_jmdev.registers import *
 from mpu9250_jmdev.mpu_9250 import MPU9250
+from ahrs.filters import Madgwick
+from ahrs.common import orientation
 from pywmm import WMMv2
 import os
+import sys
 os.environ["SDL_RENDER_DRIVER"] = "software"
+os.environ["SDL_VIDEODRIVER"] = "x11"
 
 # ==========================================================
 # CONFIGURATION
@@ -20,6 +24,7 @@ SAMPLE_PERIOD = 0.01
 LAT, LON = 37.3228818, -121.9492194
 WINDOW_WIDTH, WINDOW_HEIGHT = 960, 720
 HZ = 30
+BETA=0.5
 # Car frame of reference
 R_MOUNT = np.array([
     [ 0, -1,  0],
@@ -27,49 +32,6 @@ R_MOUNT = np.array([
     [ 0,  0, -1]
 ])
 CALIBRATION_FILE = "IMU_BIASES.txt"
-# ==========================================================
-# Madgwick Filter
-# ==========================================================
-class Madgwick:
-    def __init__(self, beta=0.1, q=None):
-        self.beta = beta
-        self.q = np.array([1.0, 0.0, 0.0, 0.0]) if q is None else q
-
-    def update(self, gyro, accel, mag, dt=0.01):
-        q1, q2, q3, q4 = self.q
-        gx, gy, gz = np.radians(gyro)
-        ax, ay, az = accel
-        mx, my, mz = mag
-        norm = np.linalg.norm(accel)
-        if norm == 0: return self.q
-        ax, ay, az = accel / norm
-        norm = np.linalg.norm(mag)
-        if norm == 0: return self.q
-        mx, my, mz = mag / norm
-        qDot1 = 0.5 * (-q2*gx - q3*gy - q4*gz)
-        qDot2 = 0.5 * (q1*gx + q3*gz - q4*gy)
-        qDot3 = 0.5 * (q1*gy - q2*gz + q4*gx)
-        qDot4 = 0.5 * (q1*gz + q2*gy - q3*gx)
-        q1 += qDot1 * dt
-        q2 += qDot2 * dt
-        q3 += qDot3 * dt
-        q4 += qDot4 * dt
-        q = np.array([q1, q2, q3, q4])
-        self.q = q / np.linalg.norm(q)
-        return self.q
-
-    def to_euler_angles(self):
-        q1,q2,q3,q4 = self.q
-        sinr_cosp = 2*(q1*q2 + q3*q4)
-        cosr_cosp = 1 - 2*(q2*q2 + q3*q3)
-        roll = np.degrees(np.arctan2(sinr_cosp, cosr_cosp))
-        sinp = 2*(q1*q3 - q4*q2)
-        pitch = np.degrees(np.sign(sinp)*90 if abs(sinp)>=1 else np.arcsin(sinp))
-        siny_cosp = 2*(q1*q4 + q2*q3)
-        cosy_cosp = 1 - 2*(q3*q3 + q4*q4)
-        yaw = np.degrees(np.arctan2(siny_cosp, cosy_cosp))
-        return pitch, roll, yaw
-
 # ==========================================================
 # Cube
 # ==========================================================
@@ -204,11 +166,11 @@ def main():
     print("IMU initialized.")
 
     gyro_bias = calibrate_gyro(mpu)
-    accel_bias, accel_scale = calibrate_accel_per_axis_6_point(mpu)
+    #accel_bias, accel_scale = calibrate_accel_per_axis_6_point(mpu)
+    accel_bias = calibrate_accel_per_axis_3_point(mpu)
     declination = get_magnetic_declination(LAT, LON)
-    with open(CALIBRATION_FILE, "w") as file:
-        file.write(f"GYRO[{gyro_bias}] ACCEL[{accel_bias}] DECLI[declination]")
-    madgwick = Madgwick()
+    q = [1.0, 0.0, 0.0, 0.0]
+    madgwick = Madgwick(frequency=(1/SAMPLE_PERIOD))
 
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -224,17 +186,25 @@ def main():
                 if event.type == pygame.QUIT:
                     raise KeyboardInterrupt
 
-            accel = (np.array(mpu.readAccelerometerMaster()) - accel_bias) * accel_scale
-            gyro = np.array(mpu.readGyroscopeMaster()) - gyro_bias
-            mag = np.array(mpu.readMagnetometerMaster())
+            #accel = (np.array(mpu.readAccelerometerMaster()) - accel_bias) * accel_scale
+            accel = np.array(mpu.readAccelerometerMaster()) - accel_bias 
+            gyro = np.radians(np.array(mpu.readGyroscopeMaster())) - gyro_bias
+            mag = np.array(mpu.readMagnetometerMaster(), dtype=float)
+            mag /= np.linalg.norm(mag)
             mag = np.array([
                 mag[0]*np.cos(declination) - mag[1]*np.sin(declination),
                 mag[0]*np.sin(declination) + mag[1]*np.cos(declination),
                 mag[2]
             ])
 
-            madgwick.update(gyro, accel, mag, SAMPLE_PERIOD)
-            pitch, roll, yaw = madgwick.to_euler_angles()
+            q = madgwick.updateMARG(gyr=gyro, acc=accel, mag=mag, q=q)
+            pitch, roll, yaw = np.degrees(orientation.q2euler(q))
+            sys.stdout.write("\033[F" * 1)
+
+            print(f"Pitch: {pitch:.1f}  Roll: {roll:.1f}  Yaw: {yaw:.1f}")
+
+            sys.stdout.flush()
+            time.sleep(SAMPLE_PERIOD)
 
             screen.fill((0,0,0))
             verts = cube.rotate(pitch, roll, yaw)
