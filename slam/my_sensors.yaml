@@ -32,21 +32,34 @@ Camera.fps: 30
 Camera.RGB: 1
 
 # Transformation from camera to body-frame (imu)
+craters@craters:~/craters-inference/utils/sensors/imu/calibration$ python3 calibrate.py 
+IMU initialized on I2C bus 1, address 0x68
+Place the unit STILL on the jig. Recording stationary data...
+
+# ---------- COPY BELOW INTO YOUR CONFIG ----------
 IMU.T_b_c1: !!opencv-matrix
    rows: 4
    cols: 4
    dt: f
-   data: [0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-         0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-        -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-         0.0, 0.0, 0.0, 1.0]
+   data: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 
-# IMU noise
-IMU.NoiseGyro: 1.7e-4 #1.6968e-04
-IMU.NoiseAcc: 2.0000e-3 #2.0e-3
-IMU.GyroWalk: 1.9393e-05 
-IMU.AccWalk: 3.0000e-03 # 3e-03
-IMU.Frequency: 200.0
+# IMU noise (continuous-time densities)
+IMU.NoiseGyro: 0.000153035    # rad/s/√Hz
+IMU.NoiseAcc:  0.00156222    # m/s^2/√Hz
+IMU.GyroWalk:  0.000136966    # rad/s^2/√Hz
+IMU.AccWalk:   0.00160693    # m/s^3/√Hz
+IMU.Frequency: 378.377
+
+# Per-axis (for reference):
+# gyro_noise_rad_s_sqrtHz: [0.000155484, 0.00014705, 0.000153035]
+# gyro_bias_rw_rad_s2_sqrtHz: [0.000111184, 0.000136966, 0.00014405]
+# acc_noise_m_s2_sqrtHz: [0.00156222, 0.00150214, 0.00248896]
+# acc_bias_rw_m_s3_sqrtHz: [0.00160693, 0.00120649, 0.00270479]
+
+# Notes:
+# - Keep the unit perfectly STILL; longer duration improves estimates.
+# - If many NaNs appear, extend --duration or set --tau-min/--tau-max to reasonable ranges.
+# - Pass your known 4x4 with --tbcmat to embed it directly in the output.
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
