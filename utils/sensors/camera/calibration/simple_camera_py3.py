@@ -1,3 +1,9 @@
+#  NOTE this script is adapted from JetsonHacksNano's CSI Camera script that can be found unaltered here:
+#  https://github.com/JetsonHacksNano/CSI-Camera/blob/master/simple_camera.py
+#  Modifications were made to upgrade the syntax from python2 -> python3 and add a frame capture feature used to capture impages of the calibration board
+#  Here is the checkerboard pattern that was used to calibrate: 
+#  http://markhedleyjones.com/media/calibration-checkerboard-collection/Checkerboard-A4-30mm-8x6.pdf
+
 import cv2
 import datetime
 import os
@@ -49,7 +55,7 @@ def show_camera():
                 keyCode = cv2.waitKey(10) & 0xFF
                 if keyCode == 27 or keyCode == ord('q'):
                     break
-                if keyCode == ord('a'):
+                if keyCode == ord('a'): # if i press the A key then a frame is captured to disk
                     path = str("./" + folder + "/img" + str(counter) + ".jpg")
                     counter += 1
                     print(f"Saving frame as {path}")
